@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GemHub コンシェルジュ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f0f2f7;
+  --surface: #ffffff;
+  --surface2: #f7f8fc;
+  --border: rgba(0,0,0,0.08);
+  --border-mid: rgba(0,0,0,0.13);
+  --accent: #1a73e8;
+  --accent-bg: rgba(26,115,232,0.08);
+  --accent-dark: #1557b0;
+  --gold: #f59e0b;
+  --gold-bg: rgba(245,158,11,0.1);
+  --gold-dark: #92400e;
+  --green: #34a853;
+  --green-bg: rgba(52,168,83,0.1);
+  --text: #1f2937;
+  --text2: #4b5563;
+  --text3: #9ca3af;
+  --shadow: 0 1px 4px rgba(0,0,0,0.08);
+  --shadow-md: 0 4px 20px rgba(0,0,0,0.10);
+  --radius: 12px;
+  --font: 'Noto Sans JP', sans-serif;
+  --mono: 'DM Mono', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { height: 100%; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+/* ── HEADER ── */
+.app-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-mid);
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  box-shadow: var(--shadow);
+}
+.logo-mark {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, #1a73e8, #34a853);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; color: #fff; font-weight: 800; flex-shrink: 0;
+}
+.header-text h1 {
+  font-size: 15px; font-weight: 700; line-height: 1.2;
+}
+.header-text p {
+  font-size: 10.5px; color: var(--text3); font-family: var(--mono); margin-top: 1px;
+}
+.header-right {
+  margin-left: auto;
+  display: flex; align-items: center; gap: 8px;
+}
+.gem-count-badge {
+  font-family: var(--mono); font-size: 10px;
+  background: var(--accent-bg); color: var(--accent);
+  border: 1px solid rgba(26,115,232,0.2);
+  border-radius: 20px; padding: 3px 10px;
+  white-space: nowrap;
+}
+.key-btn {
+  font-size: 11px; font-family: var(--font);
+  padding: 5px 12px; border-radius: 20px;
+  border: 1.5px solid var(--border-mid);
+  background: var(--surface2); color: var(--text2);
+  cursor: pointer; transition: all .15s; white-space: nowrap;
+  display: flex; align-items: center; gap: 4px;
+}
+.key-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+.key-btn.has-key { border-color: var(--green); color: var(--green); background: var(--green-bg); }
+
+/* ── MAIN LAYOUT ── */
+.app-body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ── CHAT AREA ── */
+.chat-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-mid) transparent;
+}
+.chat-messages::-webkit-scrollbar { width: 5px; }
+.chat-messages::-webkit-scrollbar-thumb { background: var(--border-mid); border-radius: 3px; }
+
+/* Welcome state */
+.welcome-panel {
+  text-align: center;
+  padding: 32px 20px 16px;
+  max-width: 560px;
+  margin: 0 auto;
+  width: 100%;
+}
+.welcome-icon { font-size: 40px; margin-bottom: 12px; }
+.welcome-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+.welcome-desc {
+  font-size: 13px; color: var(--text2); line-height: 1.8;
+  margin-bottom: 20px;
+}
+
+/* Example chips */
+.examples-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.examples-label { font-size: 11px; color: var(--text3); font-family: var(--mono); }
+.shuffle-btn {
+  font-size: 11px; font-family: var(--font);
+  padding: 3px 10px; border-radius: 12px;
+  border: 1.5px solid var(--border-mid);
+  background: transparent; color: var(--text3);
+  cursor: pointer; transition: all .14s;
+  display: flex; align-items: center; gap: 4px;
+}
+.shuffle-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+.shuffle-icon { display: inline-block; transition: transform .35s; }
+.shuffle-btn.spin .shuffle-icon { animation: spin-once .35s ease; }
+@keyframes spin-once { from { transform: rotate(0) } to { transform: rotate(360deg) } }
+
+.examples-grid {
+  display: flex; flex-direction: column; gap: 6px;
+  text-align: left;
+}
+.example-chip {
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border-mid);
+  background: var(--surface);
+  color: var(--text2);
+  font-family: var(--font); font-size: 12px;
+  cursor: pointer; text-align: left; line-height: 1.5;
+  transition: all .13s;
+}
+.example-chip:hover { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); }
+.example-chip::before { content: '💬 '; opacity: .6; }
+
+/* Messages */
+.msg-user {
+  display: flex; justify-content: flex-end;
+}
+.msg-user-bubble {
+  background: var(--accent);
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 16px 16px 4px 16px;
+  max-width: 80%;
+  font-size: 13px; line-height: 1.6;
+  word-break: break-word;
+}
+.msg-ai {
+  display: flex; gap: 10px; align-items: flex-start;
+}
+.ai-avatar {
+  width: 30px; height: 30px; flex-shrink: 0;
+  background: linear-gradient(135deg, #1a73e8, #34a853);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; color: #fff; font-weight: 800;
+  margin-top: 2px;
+}
+.msg-ai-bubble {
+  flex: 1; min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px 16px 16px 16px;
+  padding: 14px 16px;
+  box-shadow: var(--shadow);
+  font-size: 13px; line-height: 1.85;
+  color: var(--text);
+}
+.msg-ai-bubble p { margin: 0 0 8px; }
+.msg-ai-bubble p:last-child { margin: 0; }
+.msg-ai-bubble strong { font-weight: 700; }
+
+/* Goal badge */
+.goal-badge {
+  display: flex; align-items: flex-start; gap: 6px;
+  background: var(--gold-bg);
+  border: 1px solid rgba(245,158,11,0.25);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px; font-weight: 600; color: var(--gold-dark);
+  margin-bottom: 12px;
+  word-break: break-word;
+}
+.goal-badge::before { content: '🎯'; flex-shrink: 0; }
+
+/* Loading dots */
+.loading-bubble {
+  display: flex; align-items: center; gap: 6px;
+  padding: 12px 16px;
+}
+.dots { display: flex; gap: 4px; }
+.dots span {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--text3);
+  animation: dot-bounce .9s ease-in-out infinite;
+}
+.dots span:nth-child(2) { animation-delay: .18s; }
+.dots span:nth-child(3) { animation-delay: .36s; }
+@keyframes dot-bounce {
+  0%, 80%, 100% { transform: scale(.5); opacity: .4; }
+  40%            { transform: scale(1); opacity: 1; }
+}
+.loading-label { font-size: 11px; color: var(--text3); }
+
+/* Gem links */
+.gem-link {
+  color: var(--accent); font-weight: 600;
+  text-decoration: none;
+  border-bottom: 1px dotted rgba(26,115,232,.4);
+  padding: 0 1px;
+  transition: all .1s;
+}
+.gem-link:hover { background: var(--accent-bg); border-radius: 2px; border-bottom-style: solid; }
+
+/* Error */
+.error-bubble {
+  background: rgba(229,57,53,.07);
+  border: 1px solid rgba(229,57,53,.2);
+  border-radius: 8px;
+  padding: 12px 14px;
+  color: #c62828;
+  font-size: 12.5px; line-height: 1.6;
+}
+
+/* New chat btn */
+.new-chat-row {
+  margin-top: 12px;
+}
+.new-chat-btn {
+  width: 100%;
+  padding: 9px;
+  border: 1.5px dashed var(--border-mid);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text3);
+  font-family: var(--font); font-size: 12px;
+  cursor: pointer; transition: all .14s;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+}
+.new-chat-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+
+/* ── INPUT AREA ── */
+.input-area {
+  padding: 12px 16px 16px;
+  border-top: 1px solid var(--border-mid);
+  background: var(--surface2);
+  flex-shrink: 0;
+}
+.random-btn {
+  width: 100%;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1.5px solid var(--gold);
+  background: transparent;
+  color: var(--gold-dark);
+  font-family: var(--font); font-size: 12px; font-weight: 600;
+  cursor: pointer; transition: all .14s; margin-bottom: 8px;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+}
+.random-btn:hover { background: var(--gold-bg); }
+.random-btn:active { transform: scale(.98); }
+.divider {
+  display: flex; align-items: center; gap: 8px;
+  margin: 8px 0;
+  color: var(--text3); font-size: 11px;
+}
+.divider::before, .divider::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
+.input-wrap {
+  display: flex; gap: 8px; align-items: flex-end;
+}
+.goal-input {
+  flex: 1;
+  border: 1.5px solid var(--border-mid);
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 13px; font-family: var(--font);
+  color: var(--text); outline: none;
+  resize: none; background: var(--surface);
+  line-height: 1.55; max-height: 120px;
+  transition: border-color .2s, box-shadow .2s;
+  min-height: 40px;
+}
+.goal-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,115,232,.1); }
+.goal-input::placeholder { color: var(--text3); }
+.send-btn {
+  flex-shrink: 0;
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  border: none;
+  background: var(--accent); color: #fff;
+  font-size: 16px;
+  cursor: pointer; transition: all .15s;
+  display: flex; align-items: center; justify-content: center;
+}
+.send-btn:hover { background: var(--accent-dark); transform: translateY(-1px); }
+.send-btn:disabled { background: var(--border-mid); cursor: default; transform: none; }
+.input-hint { font-size: 10px; color: var(--text3); font-family: var(--mono); margin-top: 5px; text-align: right; }
+
+/* ── GEM LIST SIDEBAR ── */
+.gem-sidebar {
+  width: 280px;
+  border-left: 1px solid var(--border-mid);
+  background: var(--surface);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.gem-sidebar-header {
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.gem-sidebar-title {
+  font-size: 11px; font-weight: 700; color: var(--text2);
+  font-family: var(--mono); letter-spacing: .06em;
+  text-transform: uppercase; margin-bottom: 6px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.sidebar-search {
+  width: 100%;
+  border: 1.5px solid var(--border-mid); border-radius: 20px;
+  padding: 5px 10px 5px 28px; font-size: 12px;
+  font-family: var(--font); color: var(--text); outline: none;
+  background: var(--surface2); position: relative;
+  transition: border-color .2s;
+}
+.sidebar-search:focus { border-color: var(--accent); }
+.sidebar-search-wrap { position: relative; }
+.sidebar-search-icon {
+  position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+  font-size: 11px; pointer-events: none; color: var(--text3);
+}
+.gem-list {
+  overflow-y: auto; flex: 1; padding: 6px;
+  scrollbar-width: thin; scrollbar-color: var(--border-mid) transparent;
+}
+.gem-list::-webkit-scrollbar { width: 4px; }
+.gem-list::-webkit-scrollbar-thumb { background: var(--border-mid); border-radius: 2px; }
+.cat-group { margin-bottom: 4px; }
+.cat-label-btn {
+  display: flex; align-items: center; gap: 6px; width: 100%;
+  padding: 5px 8px; border-radius: 6px;
+  border: none; background: transparent;
+  font-family: var(--font); font-size: 11px; font-weight: 600;
+  color: var(--text2); cursor: pointer; text-align: left;
+  transition: background .12s;
+}
+.cat-label-btn:hover { background: var(--accent-bg); color: var(--accent); }
+.cat-label-btn.sop { color: #92400e; }
+.cat-label-btn.sop:hover { background: rgba(245,158,11,.1); }
+.sop-chip {
+  font-family: var(--mono); font-size: 8px; font-weight: 700;
+  background: rgba(245,158,11,.12); color: #92400e;
+  border: 1px solid rgba(245,158,11,.28); border-radius: 3px;
+  padding: 1px 4px; flex-shrink: 0;
+}
+.cat-gems { padding-left: 16px; }
+.gem-item {
+  display: flex; align-items: center; gap: 6px;
+  padding: 3px 8px; border-radius: 5px;
+  cursor: pointer; transition: background .1s;
+  font-size: 11px; color: var(--text2); line-height: 1.4;
+}
+.gem-item:hover { background: var(--accent-bg); color: var(--accent); }
+.gem-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+.cat-chevron { font-size: 8px; color: var(--text3); margin-left: auto; transition: transform .2s; flex-shrink: 0; }
+.cat-group.closed .cat-chevron { transform: rotate(-90deg); }
+.cat-group.closed .cat-gems { display: none; }
+
+/* ── API KEY MODAL ── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.35); z-index: 300;
+  align-items: center; justify-content: center; padding: 20px;
+}
+.modal-overlay.show { display: flex; }
+.modal {
+  background: var(--surface); border-radius: 16px;
+  padding: 24px; width: 100%; max-width: 400px;
+  box-shadow: 0 8px 40px rgba(0,0,0,.2);
+  animation: modal-in .2s ease;
+}
+@keyframes modal-in { from { opacity: 0; transform: scale(.95) } to { opacity: 1; transform: scale(1) } }
+.modal-title { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+.modal-desc { font-size: 12px; color: var(--text2); line-height: 1.7; margin-bottom: 16px; }
+.modal-link { color: var(--accent); text-decoration: none; }
+.modal-link:hover { text-decoration: underline; }
+.modal-input {
+  width: 100%; border: 1.5px solid var(--border-mid); border-radius: 8px;
+  padding: 9px 12px; font-size: 13px; font-family: var(--mono);
+  color: var(--text); outline: none; background: var(--surface2);
+  transition: border-color .2s;
+}
+.modal-input:focus { border-color: var(--accent); }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+.btn { display: inline-flex; align-items: center; gap: 4px; padding: 7px 16px; border-radius: 8px; border: 1.5px solid var(--border-mid); background: var(--surface); color: var(--text2); font-family: var(--font); font-size: 12px; font-weight: 500; cursor: pointer; transition: all .15s; }
+.btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .gem-sidebar { display: none; }
+  .chat-messages { padding: 14px; }
+}
+
+/* Scroll to bottom animation */
+.fade-in { animation: fadeUp .25s ease both; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: translateY(0) } }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="logo-mark">G</div>
+  <div class="header-text">
+    <h1>Gem Hub コンシェルジュ</h1>
+    <p>目的を入力 → 最適なGemワークフローをAIが提案</p>
+  </div>
+  <div class="header-right">
+    <span class="gem-count-badge" id="gemCountBadge">172 Gems</span>
+    <button class="key-btn" id="keyBtn" onclick="openKeyModal()">
+      🔑 <span id="keyBtnLabel">APIキー設定</span>
+    </button>
+  </div>
+</header>
+
+<div class="app-body">
+
+  <div class="chat-col">
+    <div class="chat-messages" id="chatMessages">
+      </div>
+
+    <div class="input-area">
+      <button class="random-btn" id="randomBtn" onclick="randomFill()">
+        🎲 自動作成 — クリックするたびに違うアイデアを入力
+      </button>
+      <div class="divider">または自分で入力</div>
+      <div class="input-wrap">
+        <textarea class="goal-input" id="goalInput"
+          placeholder="例：恋愛系スピリチュアルのIG投稿を10本作ってBufferに予約設定したい&#10;&#10;Ctrl/Cmd+Enter で送信"
+          rows="2" oninput="autoResize(this)"></textarea>
+        <button class="send-btn" id="sendBtn" onclick="runConcierge()" title="送信">↑</button>
+      </div>
+      <div class="input-hint">Ctrl + Enter で送信</div>
+    </div>
+  </div>
+
+  <aside class="gem-sidebar">
+    <div class="gem-sidebar-header">
+      <div class="gem-sidebar-title">
+        <span>登録済みGem</span>
+        <span id="sidebarCount" style="font-size:10px;color:var(--text3)">172件</span>
+      </div>
+      <div class="sidebar-search-wrap">
+        <span class="sidebar-search-icon">🔍</span>
+        <input class="sidebar-search" type="text" id="sidebarSearch"
+          placeholder="Gemを検索..." oninput="filterGems(this.value)">
+      </div>
+    </div>
+    <div class="gem-list" id="gemList"></div>
+  </aside>
+
+</div>
+
+<div class="modal-overlay" id="keyModal">
+  <div class="modal">
+    <div class="modal-title">🔑 Gemini APIキーを設定</div>
+    <div class="modal-desc">
+      <a href="https://aistudio.google.com/app/apikey" target="_blank" class="modal-link">Google AI Studio</a>
+      で取得したAPIキー（<code style="font-family:var(--mono);font-size:11px">AIza...</code>）を入力してください。<br>
+      キーはこのブラウザの localStorage に保存され、外部には送信されません。
+    </div>
+    <input type="password" class="modal-input" id="keyInput" placeholder="AIza...">
+    <div class="modal-actions">
+      <button class="btn" onclick="closeKeyModal()">キャンセル</button>
+      <button class="btn primary" onclick="saveKey()">💾 保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// GEM DATA（GemHubから抽出）
+// ═══════════════════════════════════════════════════════════
+const GEM_CATS = [
+  { name:'【SOP】ゴール設定・導線設計', sop:true, sopTag:'W00', gems:[
+    {name:'Xゴール＆導線設計｜0-conductor',url:'https://gemini.google.com/gem/8fea9c05b758'},
+    {name:'ビジネスモデル相談用Gem',url:'https://gemini.google.com/gem/e2c8e6667c50'},
+    {name:'SiteMap作成Gem',url:'https://gemini.google.com/gem/82867b75bd75'},
+    {name:'情報源ダッシュボード検索',url:'https://gemini.google.com/gem/e85c97023669'},
+    {name:'#️⃣Webコンテンツ・解析アナリスト',url:'https://gemini.google.com/gem/fad67646a280'},
+    {name:'#️⃣Web解析ナビゲーター',url:'https://gemini.google.com/gem/e7273a69f7d5'},
+  ]},
+  { name:'【SOP】YouTube多媒体アセット化', sop:true, sopTag:'W01', gems:[
+    {name:'YTナレッジベース抽出ジェネレーターMAX',url:'https://gemini.google.com/gem/309e1fb749a5'},
+    {name:'YouTubeレポート変換',url:'https://gemini.google.com/gem/b80530e48f8d'},
+    {name:'⑩コンテンツ資産化GPT',url:'https://gemini.google.com/gem/7f5ddcdd1fa5'},
+  ]},
+  { name:'【SOP】UGC・ペイン発掘＆アフィリ設計', sop:true, sopTag:'W02', gems:[
+    {name:'全方位UGC・ディープインサイトOSINT',url:'https://gemini.google.com/gem/a96da76bd79f'},
+    {name:'❶ペイン抽出＆共感ライター',url:'https://gemini.google.com/gem/59dd7dee23ac'},
+    {name:'❷原因解決＆CTAジェネレーター',url:'https://gemini.google.com/gem/d9367ed17f76'},
+    {name:'SNS・ビジネス設計・アフィリエイト設計Gem',url:'https://gemini.google.com/gem/c4f60f0d7f60'},
+  ]},
+  { name:'【SOP】Veo/Imagenクリエイティブ開発', sop:true, sopTag:'W03', gems:[
+    {name:'❺クリエイティブ生成＆プロンプト開発GPT（【ジャンル名】特化型）',url:'https://gemini.google.com/gem/7c8eb955e50b'},
+    {name:'🎬 Gemini動画プロンプト・ディレクター',url:'https://gemini.google.com/gem/e64805517f70'},
+    {name:'🍌NanoBanana2 Prompt Lab🍌',url:'https://gemini.google.com/gem/260302e79b36'},
+  ]},
+  { name:'【SOP】SNSコンテンツ量産・クリエイティブ・予約連携ライン', sop:true, sopTag:'W04', gems:[
+    {name:'✴️dマガジン: トレンド抽出＆クリエイティブ設計AI',url:'https://gemini.google.com/gem/41007cdd7b0c'},
+    {name:'❸dマガジン:投稿ネタ構成AI',url:'https://gemini.google.com/gem/b5ec0582c00a'},
+    {name:'エンゲージメント・ビルダー ｜ 共感特化型コピーライター',url:'https://gemini.google.com/gem/8b2ae0467fe7'},
+    {name:'⑦ SNS投稿作成GPT',url:'https://gemini.google.com/gem/c050b50729e0'},
+    {name:'⑨ CanvaデザインGPT',url:'https://gemini.google.com/gem/fb8a0740ae53'},
+    {name:'❾キャンバ Pro｜SNS編集手順書・仕様書メーカー',url:'https://gemini.google.com/gem/ad91ece9d7dd'},
+    {name:'✴️Filmora15 SNSディレクター（台本＆仕様書自動生成）',url:'https://gemini.google.com/gem/f3f1ef982b3a'},
+    {name:'CraftTwix SNS Marketing_Console_2026用SNS予約シート・フォーマッター',url:'https://gemini.google.com/gem/9b408d54dcac'},
+    {name:'Buffer投稿クリエイター',url:'https://gemini.google.com/gem/7c6da89abfd2'},
+  ]},
+  { name:'【SOP】SNSプロフィール・看板設計', sop:true, sopTag:'W05', gems:[
+    {name:'SNSプロフィール設計士',url:'https://gemini.google.com/gem/4a1b51840d00'},
+    {name:'設計：Xアカウント骨格 {Bio/固定/UTM} [X]',url:'https://gemini.google.com/gem/deec721890e9'},
+  ]},
+  { name:'dマガジン特化：トレンド抽出＆クリエイティブ統合ディレクター', sop:true, sopTag:'W06', gems:[
+    {name:'✴️dマガジン: トレンド抽出＆クリエイティブ設計AI',url:'https://gemini.google.com/gem/41007cdd7b0c'},
+    {name:'❎Canva Pro 統合ディレクター（SOP＆AIプロンプト生成）',url:'https://gemini.google.com/gem/3d8d41454fc3'},
+    {name:'✴️Filmora15 SNSディレクター（台本＆仕様書自動生成）',url:'https://gemini.google.com/gem/f3f1ef982b3a'},
+  ]},
+  { name:'AIエージェント・システム構築', icon:'🤖', gems:[
+    {name:'Gem Architect',url:'https://gemini.google.com/gem/56f4b5ad7e5d'},
+    {name:'Gem設計コンシェルジュ（即出力版）',url:'https://gemini.google.com/gem/1430f06ff56d'},
+    {name:'GPTs設計コンシェルジュ（即出力版）',url:'https://gemini.google.com/gem/84dae1a779ed'},
+    {name:'Antigravity❸アーキテクチャ設計顧問Gem',url:'https://gemini.google.com/gem/641cf3422e75'},
+    {name:'Antigravity❷スキル&エージェントファイル（MD）構築Gem',url:'https://gemini.google.com/gem/048624e4e157'},
+    {name:'Antigravity❶要件定義&初期プロンプト生成Gem',url:'https://gemini.google.com/gem/ebe356255a97'},
+    {name:'①AI司令塔GPT',url:'https://gemini.google.com/gem/56f4b5ad7e5d'},
+    {name:'クリエイティブ生成&プロンプト開発GPT（【ジャンル名】特化型）',url:'https://gemini.google.com/gem/7c8eb955e50b'},
+    {name:'コーディングパートナー',url:'https://gemini.google.com/gem/coding-partner'},
+  ]},
+  { name:'プロンプト最適化・外部連携ノード', icon:'🔗', gems:[
+    {name:'Opal②提案資料オートメーションノード用（Gumma/Slides連携）',url:'https://gemini.google.com/gem/24a9575f5f64'},
+    {name:'Opal①アフィリエイト自動生成ノード用（X投稿・スレ展開特化）',url:'https://gemini.google.com/gem/71dbf4b2073e'},
+    {name:'Notebook用解説系分析プロンプトメーカー',url:'https://gemini.google.com/gem/612dcf3776fc'},
+    {name:'Notebook用指示プロンプト作成メーカー',url:'https://gemini.google.com/gem/4a57e85887b4'},
+    {name:'🎥NotebookLM風・資料構築AI',url:'https://gemini.google.com/gem/7becdf06b90b'},
+    {name:'📄NotebookLM風・資料構造化',url:'https://gemini.google.com/gem/7d7a586b6618'},
+    {name:'Claude Skill Formatter',url:'https://gemini.google.com/gem/6abd14afbec3'},
+  ]},
+  { name:'生成AIクリエイティブ・プロンプト', icon:'🎨', gems:[
+    {name:'Opal❸クリエイティブ生成最適化ノード用（Veo/Imagen連携）',url:'https://gemini.google.com/gem/036665146805'},
+    {name:'🎬 Gemini動画プロンプト・ディレクター',url:'https://gemini.google.com/gem/e64805517f70'},
+    {name:'🎵Gemini音楽プロンプト・プロデューサー',url:'https://gemini.google.com/gem/0a6d0bd02ec8'},
+    {name:'🖼️ Gemini画像プロンプト・ディレクター',url:'https://gemini.google.com/gem/8a8747a849e7'},
+    {name:'🍌NanoBanana2 Prompt Lab🍌',url:'https://gemini.google.com/gem/260302e79b36'},
+    {name:'Veo Prompt Engineer',url:'https://gemini.google.com/gem/95d46ef2a3c9'},
+    {name:'Filmora AI Video Prompt Studio',url:'https://gemini.google.com/gem/8e0afb22cb1d'},
+    {name:'⑨ CanvaデザインGPT',url:'https://gemini.google.com/gem/fb8a0740ae53'},
+    {name:'Canva Design Prompt Generator',url:'https://gemini.google.com/gem/a4356b9e0722'},
+  ]},
+  { name:'グローバルトレンド・一次情報リサーチ', icon:'🌏', gems:[
+    {name:'ベトナム深層ニュース・アナリスト',url:'https://gemini.google.com/gem/6850d27a89c6'},
+    {name:'韓国深層ニュース・アナリスト',url:'https://gemini.google.com/gem/b587265efb6a'},
+    {name:'中国・深層ニュースアナリスト',url:'https://gemini.google.com/gem/6dff8bab7c60'},
+    {name:'インド深層ニュース・アナリスト',url:'https://gemini.google.com/gem/838edc45cd79'},
+    {name:'ぐーぐるトレンド・ディスカバラー',url:'https://gemini.google.com/gem/670ec9d1e6f0'},
+    {name:'Viral Content Researcher',url:'https://gemini.google.com/gem/e099604bcb3c'},
+  ]},
+  { name:'メディア・UGC・コミュニティ抽出', icon:'📰', gems:[
+    {name:'はてなブログ・リサーチャー',url:'https://gemini.google.com/gem/7370f1743fe2'},
+    {name:'ライブドアブログ・リサーチャー',url:'https://gemini.google.com/gem/2cdf98922570'},
+    {name:'Amebaブログ・リサーチャー',url:'https://gemini.google.com/gem/0891ddb56b25'},
+    {name:'Mediumライバル抽出アシスタント',url:'https://gemini.google.com/gem/f1fdc64ea87e'},
+    {name:'はてブ・ネタ掘り＆発信源リサーチャー',url:'https://gemini.google.com/gem/acc978c6cdc5'},
+    {name:'Togetterネタ＆発信者リサーチャー',url:'https://gemini.google.com/gem/342858fd6a3e'},
+    {name:'インスタ・スレッズ・ライバルリサーチャー',url:'https://gemini.google.com/gem/3c7f0b0ed3ac'},
+    {name:'れでぃっとコミュニティ・リサーチャー',url:'https://gemini.google.com/gem/fa32c3d5fbe1'},
+    {name:'❹Knowledge生成GPT（全方位UGC・ディープ本音発掘型）',url:'https://gemini.google.com/gem/58cbedb1ca25'},
+    {name:'⓿ dマガジン: ネタ収集・トレンド抽出AI',url:'https://gemini.google.com/gem/dfc8abec6b27'},
+    {name:'❺ dマガジン: 悩みデータベース生成AI',url:'https://gemini.google.com/gem/8882d370418c'},
+    {name:'❹ dマガジン: ネタ評価AI',url:'https://gemini.google.com/gem/85c5ee7f8fd9'},
+    {name:'❸ dマガジン: 投稿ネタ構成AI',url:'https://gemini.google.com/gem/b5ec0582c00a'},
+    {name:'❷ dマガジン: SNSネタ生成AI',url:'https://gemini.google.com/gem/9f47b094d1b3'},
+    {name:'❶ dマガジン: テーマ・悩み抽出AI',url:'https://gemini.google.com/gem/f4c62a43a109'},
+    {name:'抽出：雑誌語彙→見出し母集団',url:'https://gemini.google.com/gem/1286c344a135'},
+    {name:'YTナレッジベース抽出ジェネレーターMAX',url:'https://gemini.google.com/gem/309e1fb749a5'},
+    {name:'YTナレッジベース抽出エンジン',url:'https://gemini.google.com/gem/9d486139160e'},
+    {name:'✴️dマガジン: トレンド抽出＆クリエイティブ設計AI',url:'https://gemini.google.com/gem/41007cdd7b0c'},
+  ]},
+  { name:'SNS競合アカウント・深層分析', icon:'🔬', gems:[
+    {name:'Mediumアカウント競合アナライザー',url:'https://gemini.google.com/gem/79c674215d98'},
+    {name:'はてなブックマーク アカウント競合アナライザー',url:'https://gemini.google.com/gem/68a39a36f183'},
+    {name:'ようつべアカウント競合アナライザー',url:'https://gemini.google.com/gem/fc4f70a162e8'},
+    {name:'れでぃっとアカウント競合アナライザー',url:'https://gemini.google.com/gem/a10aba74ff33'},
+    {name:'インスタアカウント競合アナライザー',url:'https://gemini.google.com/gem/775a57355668'},
+    {name:'Threads アカウント競合アナライザー',url:'https://gemini.google.com/gem/580e50fdf459'},
+    {name:'【解析眼】アカウント・マルチアングル分析AI',url:'https://gemini.google.com/gem/571b07cc4ec8'},
+    {name:'④ バズ構造解析GPT',url:'https://gemini.google.com/gem/950cd1946516'},
+    {name:'⑫ SNS分析GPT',url:'https://gemini.google.com/gem/f7a45e2b56b7'},
+    {name:'SNS Trend Analyzer',url:'https://gemini.google.com/gem/220e1b71c9f8'},
+    {name:'③ SNS競合分析GPT',url:'https://gemini.google.com/gem/7b92caeb91d1'},
+    {name:'② SNSトレンド分析GPT',url:'https://gemini.google.com/gem/efd0a7c71d71'},
+    {name:'SNSトレンド・ペルソナ解剖AI',url:'https://gemini.google.com/gem/092307234f43'},
+    {name:'Instagram Strategy Analyzer',url:'https://gemini.google.com/gem/023a96dae5ea'},
+    {name:'YouTube-Storagetic-Analyzer',url:'https://gemini.google.com/gem/76105cc47954'},
+    {name:'YT戦略ノートジェネレーターMAX',url:'https://gemini.google.com/gem/5c63df5e16bf'},
+    {name:'⌘対話式Xアカウント戦略・モデリングアナリスト',url:'https://gemini.google.com/gem/8e2cdbc21691'},
+    {name:'⌘Xアカウント戦略・モデリングアナリスト',url:'https://gemini.google.com/gem/6ac823010875'},
+    {name:'YouTubeトレンド＆マーケティング戦術アナライザー',url:'https://gemini.google.com/gem/71cf0a3c386d'},
+  ]},
+  { name:'OSINT・高度検索コマンド', icon:'🕵️', gems:[
+    {name:'X深層プロファイラー',url:'https://gemini.google.com/gem/28b56ba34409'},
+    {name:'Xライバル抽出アシスタント',url:'https://gemini.google.com/gem/634ae03f0ebf'},
+    {name:'Xライバルリサーチ',url:'https://gemini.google.com/gem/94e6ea555e99'},
+    {name:'X高度検索コマンド設計AI',url:'https://gemini.google.com/gem/f80607e12e3a'},
+    {name:'X市場調査&キーワード抽出エンジン',url:'https://gemini.google.com/gem/4caa9e77db15'},
+    {name:'Xトレンド市場調査・アフィリエイト設計AI',url:'https://gemini.google.com/gem/bbb0f58362aa'},
+    {name:'Twitter簡単検索を使ったベンチマークリサーチ用Gem',url:'https://gemini.google.com/gem/eea263395b9c'},
+    {name:'いいね&リプPostスナイパー',url:'https://gemini.google.com/gem/2a6fb4358dd0'},
+  ]},
+  { name:'ビジネスモデル・マネタイズ設計', icon:'💰', gems:[
+    {name:'SNS・ビジネス設計・アフィリエイト設計Gem',url:'https://gemini.google.com/gem/c4f60f0d7f60'},
+    {name:'トレンド・マネタイズ・アナライザー',url:'https://gemini.google.com/gem/14999b778365'},
+    {name:'ビジネスモデル相談用Gem',url:'https://gemini.google.com/gem/e2c8e6667c50'},
+    {name:'⑶Webマネタイズ構造分析GPT',url:'https://gemini.google.com/gem/ff1174d6de6c'},
+    {name:'⑵SNS収益構造分析GPT',url:'https://gemini.google.com/gem/51dd65c99398'},
+    {name:'⑴SNS金脈ハンターGPT',url:'https://gemini.google.com/gem/51b770378762'},
+    {name:'Canva Creator Monetization Strategist',url:'https://gemini.google.com/gem/074e58e1bd03'},
+    {name:'Creator Monetization Strategist',url:'https://gemini.google.com/gem/0edab688198e'},
+  ]},
+  { name:'コンセプト・バリュープロップ・JTBD', icon:'💡', gems:[
+    {name:'ペルソナ＆ジャーニー設計アシスタント',url:'https://gemini.google.com/gem/626b4268050c'},
+    {name:'❸バリュープロップ・ピラミッド設計GPT',url:'https://gemini.google.com/gem/d02057e5ab46'},
+    {name:'❷JTBDディガー',url:'https://gemini.google.com/gem/39a4cfc7dc7a'},
+    {name:'❶ホワイトスペース・マトリクス設計GPT',url:'https://gemini.google.com/gem/c01e5b6c8ce8'},
+    {name:'⑤ コンセプト設計GPT',url:'https://gemini.google.com/gem/564310d3debd'},
+    {name:'企画：HARM設計 {KGI→KPI/PF別仕様}',url:'https://gemini.google.com/gem/28288c8bf453'},
+  ]},
+  { name:'アカウント骨格・投稿計画', icon:'📅', gems:[
+    {name:'SNSコンテンツ・プランナー（1ヶ月計画自動生成）',url:'https://gemini.google.com/gem/b726bc0ce215'},
+    {name:'設計：Xアカウント骨格 {Bio/固定/UTM}',url:'https://gemini.google.com/gem/deec721890e9'},
+    {name:'設計：30日予約投稿カレンダー {媒体別/CSV出力}',url:'https://gemini.google.com/gem/953ba6852f97'},
+    {name:'❹4週間コンテンツカレンダー＆制作バッチ設計GPT',url:'https://gemini.google.com/gem/dbaeab84fac8'},
+    {name:'⑪ 投稿計画GPT',url:'https://gemini.google.com/gem/5bfc583db05b'},
+    {name:'設計：ハッシュタグ戦略 {主軸/準軸/実験}',url:'https://gemini.google.com/gem/2303e1b4f18f'},
+  ]},
+  { name:'ペイン抽出・コピーライティング', icon:'✍️', gems:[
+    {name:'エンゲージメント・ビルダー ｜ 共感特化型コピーライター',url:'https://gemini.google.com/gem/8b2ae0467fe7'},
+    {name:'❶ペイン抽出＆共感ライター',url:'https://gemini.google.com/gem/59dd7dee23ac'},
+    {name:'❷原因解決＆CTAジェネレーター',url:'https://gemini.google.com/gem/d9367ed17f76'},
+    {name:'❼CTA＆誘導設計GPT：コメント→DM→オファーまで一気通貫',url:'https://gemini.google.com/gem/247516dae185'},
+    {name:'整形：口語化＆SNS-SEO一体',url:'https://gemini.google.com/gem/42634167c981'},
+    {name:'2️⃣Threads教育・セールス投稿の自動生成モジュール',url:'https://gemini.google.com/gem/db6af04e0436'},
+    {name:'⑦ SNS投稿作成GPT',url:'https://gemini.google.com/gem/c050b50729e0'},
+  ]},
+  { name:'ネタ出し・アイデア量産', icon:'💭', gems:[
+    {name:'❸ ネタガチャGPT（【ジャンル名】生成型）マスターテンプレート',url:'https://gemini.google.com/gem/42f93454cd59'},
+    {name:'❷ ネタ評価＆競合分析GPT マスターテンプレート',url:'https://gemini.google.com/gem/356b7c455274'},
+    {name:'❶ ネタ採掘GPT（【ジャンル名】収集型）マスターテンプレート',url:'https://gemini.google.com/gem/26cb235c0627'},
+    {name:'❸ネタガチャGPT（【ジャンル名】生成型）',url:'https://gemini.google.com/gem/c0498fe7db47'},
+    {name:'❷ネタ評価＆競合分析GPT（【ジャンル名】特化型）',url:'https://gemini.google.com/gem/be88dbc4696b'},
+    {name:'❶ネタ採掘GPT（【ジャンル名】収集型）',url:'https://gemini.google.com/gem/08c82846289c'},
+    {name:'ネタ採掘GPT（恋愛相談収集型）',url:'https://gemini.google.com/gem/0b01255681cc'},
+    {name:'❺フック＆アングル・バンク50｜媒体適応ジェネレーター',url:'https://gemini.google.com/gem/13ecd9af5768'},
+    {name:'⑥ 投稿アイデアGPT',url:'https://gemini.google.com/gem/7fe7a0583bc5'},
+    {name:'アイデア出しのプロ',url:'https://gemini.google.com/gem/brainstormer'},
+    {name:'Veo3.1-Trend & Idea Generator GPT',url:'https://gemini.google.com/gem/2d35eae47ce5'},
+    {name:'Viral Video Idea Generator',url:'https://gemini.google.com/gem/fdb869f7adc1'},
+  ]},
+  { name:'台本・構成構築（YouTube / note）', icon:'🎬', gems:[
+    {name:'YouTube台本＆演出生成アシスタント（汎用型）',url:'https://gemini.google.com/gem/056d46bb6773'},
+    {name:'汎用パロディ台本アーキテクト',url:'https://gemini.google.com/gem/0a199c0d33cb'},
+    {name:'YouTubeスタイルクローン',url:'https://gemini.google.com/gem/97f8b43f030e'},
+    {name:'⑧ ストーリー台本GPT',url:'https://gemini.google.com/gem/ea787014802a'},
+    {name:'1️⃣売れるnote構成案の自動生成モジュール',url:'https://gemini.google.com/gem/9edb21454680'},
+    {name:'note出版エンジン（Free→Paid一気通貫）',url:'https://gemini.google.com/gem/71fda0a37bed'},
+    {name:'台本：フック/導入テンプレ',url:'https://gemini.google.com/gem/f04a3deeb5be'},
+  ]},
+  { name:'クリエイティブ制作用SOP・仕様書', icon:'🛠️', gems:[
+    {name:'❎Canva Pro 統合ディレクター（SOP＆AIプロンプト生成）',url:'https://gemini.google.com/gem/3d8d41454fc3'},
+    {name:'➓Filmora 14｜SNS編集手順書・仕様書メーカー',url:'https://gemini.google.com/gem/fb7d2561150b'},
+    {name:'✴️Filmora15 SNSディレクター（台本＆仕様書自動生成）',url:'https://gemini.google.com/gem/f3f1ef982b3a'},
+    {name:'⓫Pippit AI｜SNS編集手順書・仕様書メーカー',url:'https://gemini.google.com/gem/470ca3a7454f'},
+    {name:'❾キャンバ Pro｜SNS編集手順書・仕様書メーカー',url:'https://gemini.google.com/gem/ad91ece9d7dd'},
+    {name:'❻角度→媒体別クリエイティブ一括展開GPT',url:'https://gemini.google.com/gem/0f051cefc18b'},
+    {name:'⑩ コンテンツ資産化GPT',url:'https://gemini.google.com/gem/7f5ddcdd1fa5'},
+    {name:'Trend Video Idea Engine',url:'https://gemini.google.com/gem/44486eed80c1'},
+    {name:'AI Video Production System',url:'https://gemini.google.com/gem/29503b7298c6'},
+  ]},
+  { name:'コンプライアンス・監査・A/Bテスト', icon:'✅', gems:[
+    {name:'守：EPPM×YMYL遵守',url:'https://gemini.google.com/gem/bb6c56a1b384'},
+    {name:'守：表現リスク管理（Fear Fix）',url:'https://gemini.google.com/gem/c6026917c8fb'},
+    {name:'監査：プロフィール/固定/OGP/CTA（Page Analyzer）',url:'https://gemini.google.com/gem/08a4b6c371eb'},
+    {name:'❽A/Bテスト設計＆計測SSOT GPT',url:'https://gemini.google.com/gem/790d984df4b5'},
+    {name:'Togetter/posfie まとめ&アカウント監査官',url:'https://gemini.google.com/gem/1e9af6814c88'},
+  ]},
+  { name:'ドキュメント・資料化', icon:'📄', gems:[
+    {name:'YouTubeレポート変換',url:'https://gemini.google.com/gem/b80530e48f8d'},
+    {name:'Storybook',url:'https://gemini.google.com/gem/storybook'},
+  ]},
+];
+
+// ─── Example ideas ───────────────────────────────────────
+const IDEAS = [
+  "特定のペルソナに向けた教育系コンテンツを30日分一気に量産したい",
+  "最新ガジェットのレビュー記事をカルーセル×リール×Xスレッドに横展開したい",
+  "季節のイベントやセールに合わせた販促キャンペーンの投稿カレンダーを作りたい",
+  "金融・投資ジャンルで初心者の「よくある質問」を網羅したQ&Aコンテンツを作りたい",
+  "特定の悩みに刺さる共感ポストを週5本ペースで量産したい",
+  "YouTubeの長尺動画1本から、X・IG・TikTok用のショート動画素材を一括生成したい",
+  "商品レビュー用の0〜60秒ショート動画台本を10本一気に作りたい",
+  "TikTokでエンゲージメントが高まりやすい「あるある・失敗談」動画台本を量産したい",
+  "Filmoraでの編集まで見据えたテロップ・SE指示込みの完全台本＋仕様書セットを生成したい",
+  "競合アカウントを調査して自社の差別化ポイントとアカウント戦略を立案したい",
+  "同ジャンルのトップインフルエンサーの勝ちパターンを分析してモデリングしたい",
+  "ライバルを徹底分析して「真似すべき型」と「避けるべきポイント」を抽出したい",
+  "ターゲット層のリアルな悩みとJTBDをSNSの検索結果から言語化したい",
+  "ホワイトスペースを特定して独自のアフィリエイトポジションを確立したい",
+  "LINE公式アカウントへの誘導CTAを全SNS投稿に自然に組み込みたい",
+  "noteの有料記事とLINEファネルを連動させた自動収益化の仕組みを固めたい",
+  "Xのプロフィール〜固定ポスト〜LINE登録までのユーザー導線を丸ごと再設計したい",
+  "Bufferに一括インポートするCSV用データをフル工程で作成したい",
+  "30日分の投稿カレンダーを教育・共感・セールスの軸でバランスよく組んで予約設定したい",
+  "新規立ち上げするSNSアカウントのゴール設定からプロフィール設計まで一気に済ませたい",
+  "X・IG・TikTokで複数パターンのA/Bテストを設計しクリック率の高い訴求を見極めたい",
+  "スピリチュアル×恋愛系のIG投稿を10本作ってBufferに予約設定したい",
+  "dマガジンの最新号からSNSネタを抽出してクリエイティブまで一気に仕上げたい",
+  "Veo動画を使ったバイラルコンテンツのアイデアを量産したい",
+  "アフィリエイト商品のPRを普段の発信に違和感なく組み込みたい",
+];
+
+// ─── State ───────────────────────────────────────────────
+let apiKey = '';
+let ideaPool = [], ideaIdx = 0;
+let isLoading = false;
+
+try { apiKey = localStorage.getItem('gemhub_concierge_key') || ''; } catch(e) {}
+
+// ─── Utility ─────────────────────────────────────────────
+function buildGemListText() {
+  let s = '';
+  GEM_CATS.forEach(cat => {
+    s += `\n■ ${cat.name}\n`;
+    cat.gems.forEach(g => { s += `  - ${g.name}\n`; });
+  });
+  return s;
+}
+
+function findGemUrl(name) {
+  for (const cat of GEM_CATS) {
+    const g = cat.gems.find(g => g.name === name);
+    if (g) return g.url;
+    const key = name.substring(0, 12).toLowerCase();
+    const g2 = cat.gems.find(g => g.name.toLowerCase().substring(0, 12) === key);
+    if (g2) return g2.url;
+  }
+  return null;
+}
+
+function linkifyGems(text) {
+  let result = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  GEM_CATS.forEach(cat => {
+    cat.gems.forEach(gem => {
+      const safe = gem.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+      result = result.replace(
+        new RegExp(`(${safe})`, 'g'),
+        `<a class="gem-link" href="${gem.url}" target="_blank">$1 ↗</a>`
+      );
+    });
+  });
+  return result
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n/g, '<br>');
+}
+
+function totalGems() {
+  return GEM_CATS.reduce((a,c) => a + c.gems.length, 0);
+}
+
+// ─── Key Modal ───────────────────────────────────────────
+function openKeyModal() {
+  document.getElementById('keyInput').value = apiKey;
+  document.getElementById('keyModal').classList.add('show');
+  setTimeout(() => document.getElementById('keyInput').focus(), 80);
+}
+function closeKeyModal() {
+  document.getElementById('keyModal').classList.remove('show');
+}
+function saveKey() {
+  const v = document.getElementById('keyInput').value.trim();
+  if (!v) return;
+  apiKey = v;
+  try { localStorage.setItem('gemhub_concierge_key', apiKey); } catch(e) {}
+  updateKeyBtn();
+  closeKeyModal();
+}
+function updateKeyBtn() {
+  const btn = document.getElementById('keyBtn');
+  const lbl = document.getElementById('keyBtnLabel');
+  if (apiKey) {
+    btn.classList.add('has-key');
+    lbl.textContent = 'APIキー設定済み';
+  } else {
+    btn.classList.remove('has-key');
+    lbl.textContent = 'APIキー設定';
+  }
+}
+
+// ─── Example ideas ───────────────────────────────────────
+function shuffleIdeas() {
+  ideaPool = IDEAS.map((_,i)=>i).sort(()=>Math.random()-.5);
+  ideaIdx  = 0;
+}
+function pickIdea() {
+  if (ideaIdx >= ideaPool.length) shuffleIdeas();
+  return IDEAS[ideaPool[ideaIdx++]];
+}
+function renderExamples() {
+  const c = document.getElementById('examplesGrid');
+  if (!c) return;
+  const picked = [];
+  for (let i=0; i<5; i++) picked.push(pickIdea());
+  c.innerHTML = picked.map(q =>
+    `<button class="example-chip" onclick="fillGoal(this.dataset.q)" data-q="${q.replace(/"/g,'&quot;')}">${q}</button>`
+  ).join('');
+}
+function shuffleBtn(btn) {
+  btn.classList.add('spin');
+  setTimeout(() => btn.classList.remove('spin'), 380);
+  renderExamples();
+}
+function fillGoal(q) {
+  const inp = document.getElementById('goalInput');
+  inp.value = q; inp.focus(); autoResize(inp);
+}
+function randomFill() {
+  fillGoal(pickIdea());
+  const btn = document.getElementById('randomBtn');
+  btn.style.background = 'rgba(245,158,11,.18)';
+  setTimeout(() => btn.style.background = '', 280);
+}
+
+// ─── Gem Sidebar ─────────────────────────────────────────
+function renderGemSidebar(filter='') {
+  const fl = filter.toLowerCase();
+  const list = document.getElementById('gemList');
+  let html = '';
+  GEM_CATS.forEach((cat, ci) => {
+    const visGems = fl
+      ? cat.gems.filter(g => g.name.toLowerCase().includes(fl))
+      : cat.gems;
+    if (fl && visGems.length === 0) return;
+    const isSop = cat.sop === true;
+    const label = isSop
+      ? `<span class="sop-chip">${cat.sopTag}</span><span>${cat.name}</span>`
+      : `<span>${cat.icon||'📌'}</span><span>${cat.name}</span>`;
+    html += `<div class="cat-group${fl?'':''}" id="cg-${ci}">
+      <button class="cat-label-btn${isSop?' sop':''}" onclick="toggleCatGroup(${ci})">
+        ${label}
+        <span class="cat-chevron">▼</span>
+      </button>
+      <div class="cat-gems">`;
+    visGems.forEach(g => {
+      html += `<div class="gem-item" onclick="fillGoalWithGem('${g.name.replace(/'/g,"\\'")}')">
+        <span class="gem-dot"></span>
+        <span>${fl ? g.name.replace(new RegExp(`(${filter.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi'), '<mark style="background:#fef08a">$1</mark>') : g.name}</span>
+      </div>`;
+    });
+    html += `</div></div>`;
+  });
+  list.innerHTML = html || '<div style="text-align:center;padding:20px;color:var(--text3);font-size:12px">見つかりません</div>';
+}
+function toggleCatGroup(ci) {
+  const el = document.getElementById('cg-' + ci);
+  if (el) el.classList.toggle('closed');
+}
+function filterGems(v) { renderGemSidebar(v.trim()); }
+function fillGoalWithGem(name) {
+  const inp = document.getElementById('goalInput');
+  inp.value = `「${name}」を使って〜したい`;
+  inp.focus(); autoResize(inp);
+}
+
+// ─── Chat ────────────────────────────────────────────────
+function showWelcome() {
+  const msgs = document.getElementById('chatMessages');
+  msgs.innerHTML = `
+    <div class="welcome-panel fade-in">
+      <div class="welcome-icon">✨</div>
+      <div class="welcome-title">Gem Hub コンシェルジュ</div>
+      <div class="welcome-desc">
+        達成したい目的を入力すると、<br>
+        <strong>登録済み ${totalGems()} 個のGem</strong> の中から<br>
+        最適な使用順序とワークフローをAIが提案します。
+      </div>
+      <div class="examples-header">
+        <span class="examples-label">💬 サンプル (5/${IDEAS.length})</span>
+        <button class="shuffle-btn" onclick="shuffleBtn(this)">
+          <span class="shuffle-icon">🔄</span> 別のアイデアを見る
+        </button>
+      </div>
+      <div class="examples-grid" id="examplesGrid"></div>
+    </div>`;
+  renderExamples();
+}
+
+function appendMsg(html, cls='fade-in') {
+  const msgs = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = cls;
+  div.innerHTML = html;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function appendUserMsg(text) {
+  appendMsg(`<div class="msg-user">
+    <div class="msg-user-bubble">${text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+  </div>`);
+}
+
+function appendLoadingMsg() {
+  const id = 'loading-' + Date.now();
+  appendMsg(`<div class="msg-ai" id="${id}">
+    <div class="ai-avatar">G</div>
+    <div class="msg-ai-bubble">
+      <div class="loading-bubble">
+        <div class="dots"><span></span><span></span><span></span></div>
+        <span class="loading-label">AIが分析中…</span>
+      </div>
+    </div>
+  </div>`);
+  return id;
+}
+
+function replaceLoading(id, html) {
+  const el = document.getElementById(id);
+  if (el) el.outerHTML = html;
+  const msgs = document.getElementById('chatMessages');
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+// ─── API Call ────────────────────────────────────────────
+const SYSTEM_PROMPT = `あなたは「Gem Hub コンシェルジュ」です。SNSコンテンツ制作・アフィリエイト・スピリチュアル×恋愛ニッチを専門とするクリエイターの作業効率化を支援します。
+
+【役割】ユーザーの目的に対して、以下の【登録済みGemリスト】から最適なGemを選び、実行可能なワークフローを日本語で提案します。
+
+【提案ルール】
+1. 必ずリストに記載された正確なGem名のみを使用（一字一句変えない）
+2. 各ステップは以下の形式で記述：
+   **STEP N：【Gem名 or 手動作業】**
+   役割：このステップで何をするか
+   入力：何を入力するか（具体例）
+   出力：何が得られるか
+   次への渡し方：次のステップへのデータの引き継ぎ方
+3. ステップ数は3〜10程度（目的の規模に応じて）
+4. リストにないGemが必要な工程は「手動作業」や「汎用Geminiプロンプト」と明記
+5. 最後に合計所要時間の目安を添える
+6. 現在のGemリストで対応困難な要望は正直に「対応が難しい理由」と「代替案」を提示`;
+
+async function runConcierge() {
+  if (isLoading) return;
+  const inp  = document.getElementById('goalInput');
+  const goal = inp.value.trim();
+  if (!goal) { inp.focus(); return; }
+
+  if (!apiKey) {
+    openKeyModal();
+    return;
+  }
+
+  // Clear welcome, add messages
+  const msgs = document.getElementById('chatMessages');
+  if (msgs.querySelector('.welcome-panel')) msgs.innerHTML = '';
+
+  appendMsg(`<div class="goal-badge">${goal.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`);
+  inp.value = ''; autoResize(inp);
+  isLoading = true;
+  document.getElementById('sendBtn').disabled = true;
+
+  const loadId = appendLoadingMsg();
+  const userPrompt = `目的：${goal}\n\n【登録済みGemリスト】${buildGemListText()}`;
+
+  try {
+    const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    const res = await fetch(ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+        generationConfig: { temperature: 0.65, maxOutputTokens: 8000 }
+      })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message || 'APIエラー');
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) throw new Error('応答テキストが見つかりません');
+
+    replaceLoading(loadId, `<div class="msg-ai">
+      <div class="ai-avatar">G</div>
+      <div class="msg-ai-bubble">
+        <div>${linkifyGems(text)}</div>
+        <div class="new-chat-row">
+          <button class="new-chat-btn" onclick="showWelcome()">＋ 新しい目的で相談する</button>
+        </div>
+      </div>
+    </div>`);
+  } catch(err) {
+    const isFetch = err.message.includes('fetch') || err.message.includes('network');
+    replaceLoading(loadId, `<div class="msg-ai">
+      <div class="ai-avatar">G</div>
+      <div class="msg-ai-bubble">
+        <div class="error-bubble">
+          ${isFetch
+            ? '⚠️ 通信エラー（Failed to fetch）<br><br>このHTMLファイルはブラウザで直接開いたときのみ動作します。Claude.ai のプレビュー画面ではCORS制限により外部APIへの通信がブロックされます。<br><br><strong>→ ダウンロードしたHTMLをブラウザで直接開いてください。</strong>'
+            : `❌ エラー：${err.message.replace(/&/g,'&amp;').replace(/</g,'&lt;')}`}
+        </div>
+        <div class="new-chat-row">
+          <button class="new-chat-btn" onclick="showWelcome()">再試行</button>
+        </div>
+      </div>
+    </div>`);
+  } finally {
+    isLoading = false;
+    document.getElementById('sendBtn').disabled = false;
+  }
+}
+
+// ─── Auto resize textarea ─────────────────────────────────
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+// ─── Init ────────────────────────────────────────────────
+function init() {
+  shuffleIdeas();
+  updateKeyBtn();
+  const total = totalGems();
+  document.getElementById('gemCountBadge').textContent = total + ' Gems';
+  document.getElementById('sidebarCount').textContent  = total + '件';
+  showWelcome();
+  renderGemSidebar();
+
+  // keyboard
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      closeKeyModal();
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      if (!document.getElementById('keyModal').classList.contains('show')) {
+        runConcierge();
+      }
+    }
+    if (e.key === 'Enter' && document.getElementById('keyModal').classList.contains('show')) {
+      saveKey();
+    }
+  });
+
+  // close modal on overlay click
+  document.getElementById('keyModal').addEventListener('click', function(e) {
+    if (e.target === this) closeKeyModal();
+  });
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
